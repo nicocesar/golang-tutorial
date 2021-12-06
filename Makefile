@@ -20,8 +20,7 @@ tools/abigen:
 
 solidity_contracts/openzeppelin-contracts:
 	mkdir -p solidity_contracts
-	cd solidity_contracts
-	if [ ! -d openzeppelin-contracts ] ; then git clone https://github.com/OpenZeppelin/openzeppelin-contracts.git ; else cd openzeppelin-contracts ; git pull ; fi
+	cd solidity_contracts && if [ ! -d openzeppelin-contracts ] ; then git clone https://github.com/OpenZeppelin/openzeppelin-contracts.git ; else cd openzeppelin-contracts ; git pull ; fi
 
 lib/contracts/erc20/erc20.go: tools/solc-0.8.10 tools/abigen solidity_contracts/openzeppelin-contracts
 	mkdir -p lib/contracts/erc20
@@ -29,7 +28,7 @@ lib/contracts/erc20/erc20.go: tools/solc-0.8.10 tools/abigen solidity_contracts/
 	go mod tidy
 
 golang-tutorial: lib/contracts/erc20/erc20.go main.go
-	go build main.go -o golang-tutorial
+	go build -o golang-tutorial main.go 
 
 clean:
-	rm -rf geth-* tools	solidity_contracts
+	rm -rf geth-* tools	solidity_contracts golang-tutorial
