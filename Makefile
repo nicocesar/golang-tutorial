@@ -1,3 +1,4 @@
+all: golang-tutorial
 
 tools/solc-0.8.10:
 	mkdir -p tools
@@ -27,5 +28,8 @@ lib/contracts/erc20/erc20.go: tools/solc-0.8.10 tools/abigen solidity_contracts/
 	tools/abigen --solc ./tools/solc-0.8.10 --sol solidity_contracts/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol --pkg erc20 --out lib/contracts/erc20/erc20.go
 	go mod tidy
 
+golang-tutorial: lib/contracts/erc20/erc20.go main.go
+	go build main.go -o golang-tutorial
+
 clean:
-	rm -rf geth-* tools	
+	rm -rf geth-* tools	solidity_contracts

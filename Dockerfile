@@ -4,4 +4,6 @@ COPY . /app
 WORKDIR /app
 RUN go mod tidy
 
+RUN make
+
 CMD ./golang-tutorial
