@@ -10,10 +10,8 @@ tools/solc-0.7.6:
 	wget -O tools/solc-0.7.6 https://github.com/ethereum/solidity/releases/download/v0.7.6/solc-static-linux
 	chmod +x tools/solc-0.7.6
 
-
 tools/abigen:
 	mkdir -p tools
-	cd tools
 	wget https://gethstore.blob.core.windows.net/builds/geth-alltools-linux-amd64-1.10.13-7a0c19f8.tar.gz
 	md5sum --check geth.md5sum
 	tar xvzf geth-alltools-linux-amd64-1.10.13-7a0c19f8.tar.gz -C tools --strip-components 1
