@@ -13,7 +13,7 @@ func main() {
 	// Go get your key:  https://infura.io/register
 	key := os.Getenv("INFURA_API_KEY")
 	if key == "" {
-		fmt.Println("INFURA_API_KEY is not set")
+		fmt.Println("INFURA_API_KEY is not set. Get an account at https://infura.io/register")
 		os.Exit(1)
 	}
 
