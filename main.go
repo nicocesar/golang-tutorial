@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/nicocesar/golang-tutorial/lib/contracts/erc20"
+	"github.com/nicocesar/golang-tutorial/lib/contracts/uniswapv3"
 )
 
 func main() {
@@ -23,14 +24,24 @@ func main() {
 		panic(err)
 	}
 
-	token0Address := common.HexToAddress("0x6B175474E89094C44Da98b954EedeAC495271d0F") // DAI mainnet
-	token0contract, err := erc20.NewERC20(token0Address, client)
+	poolAddress := common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640") // ETH-USDC 0.05% UniV3 Pool
+	boundcontract, err := uniswapv3.NewUniswapV3Pool(poolAddress, client)
 	if err != nil {
 		panic(err)
 	}
+	c := boundcontract.UniswapV3PoolCaller
 
-	for signature, methods := range erc20.ERC20MetaData.Sigs {
+	for signature, methods := range uniswapv3.IUniswapV3PoolMetaData.Sigs {
 		fmt.Println(signature, methods)
+	}
+
+	token0Address, err := c.Token0(nil)
+	if err != nil {
+		panic(err)
+	}
+	token0contract, err := erc20.NewERC20(token0Address, client)
+	if err != nil {
+		panic(err)
 	}
 
 	name, err := token0contract.ERC20Caller.Name(nil)
@@ -48,5 +59,5 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Contract %s, Symbol:%s, Name: %s, Decimals %d \n", token0Address, symbol, name, decimals)
+	fmt.Printf("Token0: %s, Symbol: %s, Name: %s, Decimals: %d\n", token0Address, symbol, name, decimals)
 }
