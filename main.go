@@ -10,6 +10,30 @@ import (
 	"github.com/nicocesar/golang-tutorial/lib/contracts/uniswapv3"
 )
 
+func describeERC20(tokenAddress common.Address, client *ethclient.Client) (string, error) {
+	tokenContract, err := erc20.NewERC20(tokenAddress, client)
+	if err != nil {
+		panic(err)
+	}
+
+	name, err := tokenContract.Name(nil)
+	if err != nil {
+		return "", err
+	}
+
+	symbol, err := tokenContract.Symbol(nil)
+	if err != nil {
+		return "", err
+	}
+
+	decimals, err := tokenContract.Decimals(nil)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Token: %s, Symbol: %s, Name: %s, Decimals: %d\n", tokenAddress, symbol, name, decimals), nil
+}
+
 func main() {
 	// Go get your key:  https://infura.io/register
 	key := os.Getenv("INFURA_API_KEY")
@@ -39,25 +63,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	token0contract, err := erc20.NewERC20(token0Address, client)
+	tokenStr, err := describeERC20(token0Address, client)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("Token 0: %s", tokenStr)
 
-	name, err := token0contract.ERC20Caller.Name(nil)
+	token1Address, err := c.Token1(nil)
 	if err != nil {
 		panic(err)
 	}
-
-	symbol, err := token0contract.Symbol(nil)
+	tokenStr, err = describeERC20(token1Address, client)
 	if err != nil {
 		panic(err)
 	}
-
-	decimals, err := token0contract.Decimals(nil)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("Token0: %s, Symbol: %s, Name: %s, Decimals: %d\n", token0Address, symbol, name, decimals)
+	fmt.Printf("Token 1: %s", tokenStr)
 }
