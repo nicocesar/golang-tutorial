@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum"
@@ -11,32 +12,76 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/fatih/color"
 	"github.com/nicocesar/golang-tutorial/lib/contracts/erc20"
 	"github.com/nicocesar/golang-tutorial/lib/contracts/uniswapv3"
+	"github.com/shopspring/decimal"
 )
 
-func describeERC20(tokenAddress common.Address, client *ethclient.Client) (string, error) {
+func describeERC20(tokenAddress common.Address, client *ethclient.Client) (string, string, uint8, error) {
 	tokenContract, err := erc20.NewERC20(tokenAddress, client)
 	if err != nil {
-		panic(err)
+		return "", "", 0, err
 	}
 
 	name, err := tokenContract.Name(nil)
 	if err != nil {
-		return "", err
+		return "", "", 0, err
 	}
 
 	symbol, err := tokenContract.Symbol(nil)
 	if err != nil {
-		return "", err
+		return "", "", 0, err
 	}
 
 	decimals, err := tokenContract.Decimals(nil)
 	if err != nil {
-		return "", err
+		return "", "", 0, err
 	}
 
-	return fmt.Sprintf("Token: %s, Symbol: %s, Name: %s, Decimals: %d\n", tokenAddress, symbol, name, decimals), nil
+	return symbol, name, decimals, nil
+}
+
+func bigIntToDecimalString(amount *big.Int, decimals uint8) (string, error) {
+	if decimals == 0 {
+		return amount.String(), nil
+	} else {
+		return decimal.NewFromBigInt(amount, -int32(decimals)).String(), nil
+	}
+}
+
+func prettySwap(Amount0 *big.Int, Amount1 *big.Int, t0Symbol string, t1Symbol string, t0Decimals uint8, t1Decimals uint8) (string, error) {
+	var err error
+	var t0Amount, t1Amount string
+	red := color.New(color.FgRed).SprintFunc()
+	green := color.New(color.FgGreen).SprintfFunc()
+
+	sellingT0 := Amount0.Cmp(big.NewInt(0)) == -1 //  Amount0 is lower than 0 means that we are selling token0
+
+	if t0Decimals > 0 {
+		t0Amount, err = bigIntToDecimalString(Amount0, t0Decimals)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		t0Amount = fmt.Sprintf("%d", Amount0)
+	}
+
+	if t1Decimals > 0 {
+		t1Amount, err = bigIntToDecimalString(Amount1, t1Decimals)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		t1Amount = fmt.Sprintf("%d", Amount1)
+	}
+
+	if sellingT0 {
+		return fmt.Sprintf("%s %s -> %s %s", red(t0Amount), red(t0Symbol), green(t1Amount), green(t1Symbol)), nil
+	} else {
+		return fmt.Sprintf("%s %s -> %s %s", green(t0Amount), green(t0Symbol), red(t1Amount), red(t1Symbol)), nil
+	}
+
 }
 
 func main() {
@@ -68,21 +113,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	tokenStr, err := describeERC20(token0Address, client)
+	t0Symbol, t0Name, t0Decimals, err := describeERC20(token0Address, client)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Token 0: %s", tokenStr)
+	fmt.Printf("Token 0: %s (%s), Decimals: %d\n", t0Symbol, t0Name, t0Decimals)
 
 	token1Address, err := c.Token1(nil)
 	if err != nil {
 		panic(err)
 	}
-	tokenStr, err = describeERC20(token1Address, client)
+	t1Symbol, t1Name, t1Decimals, err := describeERC20(token1Address, client)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Token 1: %s", tokenStr)
+	fmt.Printf("Token 1: %s (%s), Decimals: %d\n", t1Symbol, t1Name, t1Decimals)
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{poolAddress},
@@ -111,8 +156,12 @@ func main() {
 					log.Printf("error:%s\n%#v", err.Error(), vLog)
 					break
 				}
-
-				fmt.Printf("Swap: %d,%d,%d,%d,%d\n", y.Amount0, y.Amount1, y.Liquidity, y.Tick, y.SqrtPriceX96)
+				x, err := prettySwap(y.Amount0, y.Amount1, t0Symbol, t1Symbol, t0Decimals, t1Decimals)
+				if err != nil {
+					log.Printf("error: %s\n%#v", err.Error(), vLog)
+					break
+				}
+				fmt.Println(x)
 			default:
 				fmt.Printf("Unknown log: %#v\n", vLog)
 			}
