@@ -84,30 +84,13 @@ func prettySwap(Amount0 *big.Int, Amount1 *big.Int, t0Symbol string, t1Symbol st
 
 }
 
-func main() {
-	// Go get your key:  https://infura.io/register
-	key := os.Getenv("INFURA_API_KEY")
-	if key == "" {
-		fmt.Println("INFURA_API_KEY is not set. Get an account at https://infura.io/register")
-		os.Exit(1)
-	}
-
-	// Connect to Ethereum node
-	client, err := ethclient.Dial(fmt.Sprintf("wss://mainnet.infura.io/ws/v3/%s", key))
-	if err != nil {
-		panic(err)
-	}
-
-	poolAddress := common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640") // ETH-USDC 0.05% UniV3 Pool
+func showSwaps(poolAddress common.Address, client *ethclient.Client) {
+	fmt.Println("Watching swaps for pool: ", poolAddress.String())
 	boundcontract, err := uniswapv3.NewUniswapV3Pool(poolAddress, client)
 	if err != nil {
 		panic(err)
 	}
 	c := boundcontract.UniswapV3PoolCaller
-
-	for signature, methods := range uniswapv3.IUniswapV3PoolMetaData.Sigs {
-		fmt.Println(signature, methods)
-	}
 
 	token0Address, err := c.Token0(nil)
 	if err != nil {
@@ -166,5 +149,40 @@ func main() {
 				fmt.Printf("Unknown log: %#v\n", vLog)
 			}
 		}
+	}
+
+}
+
+func main() {
+	// Go get your key:  https://infura.io/register
+	key := os.Getenv("INFURA_API_KEY")
+	if key == "" {
+		fmt.Println("INFURA_API_KEY is not set. Get an account at https://infura.io/register")
+		os.Exit(1)
+	}
+
+	// Connect to Ethereum node
+	client, err := ethclient.Dial(fmt.Sprintf("wss://mainnet.infura.io/ws/v3/%s", key))
+	if err != nil {
+		panic(err)
+	}
+
+	pools, err := getUniswapV3Pools()
+	if err != nil {
+		panic(err)
+	}
+	poolsToWatch := make(chan common.Address, 10)
+
+	go func() {
+		// this will push the pool addresses to the channel to watch
+		// this is a channel so in the future we can add more pools
+		// dynamically from other go routines
+		for _, pool := range pools.Pools {
+			poolsToWatch <- common.HexToAddress(pool)
+		}
+	}()
+
+	for poolAddress := range poolsToWatch {
+		go showSwaps(poolAddress, client)
 	}
 }

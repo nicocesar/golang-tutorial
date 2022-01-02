@@ -34,8 +34,8 @@ lib/contracts/uniswapv3/pool.go: tools/solc-0.7.6 tools/abigen solidity_contract
 	tools/abigen --solc ./tools/solc-0.7.6 --sol solidity_contracts/v3-core/contracts/UniswapV3Pool.sol --pkg uniswapv3 --out lib/contracts/uniswapv3/pool.go
 	go mod tidy
 
-golang-tutorial: lib/contracts/erc20/erc20.go lib/contracts/uniswapv3/pool.go main.go
-	go build -o golang-tutorial main.go 
+golang-tutorial: lib/contracts/erc20/erc20.go lib/contracts/uniswapv3/pool.go main.go getPools.go
+	go build -o golang-tutorial main.go getPools.go
 
 clean:
 	rm -rf geth-* tools	solidity_contracts golang-tutorial
